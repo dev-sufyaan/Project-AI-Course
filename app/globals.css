@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Google's Noto fonts for multilingual support */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&family=Noto+Sans+Arabic&family=Noto+Sans+Bengali&family=Noto+Sans+Devanagari&family=Noto+Sans+Tamil&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+
+    /* Chart colors */
+    --chart-1: 226 70% 55.5%;
+    --chart-2: 262 83.3% 57.8%;
+    --chart-3: 316 70% 50%;
+    --chart-4: 175 84.8% 39.8%;
+    --chart-5: 20 80.2% 48%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+
+  /* Add these styles for course content */
+  .course-content h1 {
+    @apply text-3xl font-bold mt-8 mb-4;
+  }
+
+  .course-content h2 {
+    @apply text-2xl font-semibold mt-6 mb-3;
+  }
+
+  .course-content h3 {
+    @apply text-xl font-medium mt-5 mb-2;
+  }
+
+  .course-content p {
+    @apply my-4 leading-relaxed;
+  }
+
+  .course-content ul,
+  .course-content ol {
+    @apply my-4 ml-6 space-y-2;
+  }
+
+  .course-content pre {
+    @apply my-6;
+  }
+
+  .course-content blockquote {
+    @apply pl-4 border-l-4 border-muted-foreground/30 italic my-4;
+  }
+
+  .course-content hr {
+    @apply my-8;
+  }
+
+  .course-content code {
+    @apply font-mono text-sm px-1 py-0.5 bg-muted rounded;
+  }
+
+  /* Multilingual support */
+  [dir="rtl"] {
+    text-align: right;
+  }
+
+  /* Ensure code blocks are always LTR */
+  pre, code {
+    direction: ltr !important;
+    text-align: left !important;
+  }
+
+  /* Course content styles for multilingual support */
+  .course-content {
+    font-feature-settings: "tnum" on;
+    line-height: 1.6;
+  }
+
+  /* Add Noto fonts as fallbacks for different scripts */
+  body {
+    font-family: var(--font-outfit), 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Arabic', 'Noto Sans Bengali', 'Noto Sans Tamil', sans-serif;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/50 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50 transition-colors;
+  }
+}
+
+/* Monaco Editor customizations */
+.monaco-editor .margin,
+.monaco-editor .monaco-editor-background {
+  @apply bg-muted/30;
+}
+
+/* Particle background adjustments */
+#tsparticles {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+
