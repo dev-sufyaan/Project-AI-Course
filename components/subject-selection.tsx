@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { useAssessmentStore } from "@/lib/store"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Code, FileText, Languages, BookOpen } from "lucide-react"
+import { ArrowRight, Code, Globe, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 
@@ -12,23 +12,16 @@ const subjects = [
   {
     id: "python",
     title: "Python Programming",
-    description: "Learn Python from basics to advanced concepts",
+    description: "Learn Python from basics to advanced concepts with hands-on projects",
     icon: Code,
     color: "from-blue-500 to-cyan-400",
   },
   {
-    id: "english",
-    title: "English Language",
-    description: "Master English grammar, vocabulary, and writing",
-    icon: Languages,
-    color: "from-emerald-500 to-teal-400",
-  },
-  {
-    id: "math",
-    title: "Advanced Mathematics",
-    description: "Calculus, linear algebra, and more",
-    icon: FileText,
-    color: "from-orange-500 to-amber-400",
+    id: "web_development",
+    title: "Web Development",
+    description: "Build responsive websites with HTML, CSS, JavaScript and modern frameworks",
+    icon: Globe,
+    color: "from-pink-500 to-rose-400",
   },
 ]
 
