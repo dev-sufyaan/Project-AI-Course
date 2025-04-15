@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAssessmentStore } from "@/lib/store"
+import { useBoundStore } from "@/lib/store"
 import { MainLayout } from "@/components/main-layout"
 import { CourseContent } from "@/components/course/course-content"
 import { useToast } from "@/components/ui/use-toast"
@@ -22,7 +22,7 @@ export default function SubjectPage({ params }: SubjectPageProps) {
     resetChat, 
     loadSavedProgress, 
     courseContents 
-  } = useAssessmentStore()
+  } = useBoundStore()
   
   const subjectValue = params.subject
 

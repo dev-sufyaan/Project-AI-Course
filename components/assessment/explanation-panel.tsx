@@ -1,6 +1,6 @@
 "use client"
 
-import { useAssessmentStore } from "@/lib/store"
+import { useBoundStore } from "@/lib/store"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
