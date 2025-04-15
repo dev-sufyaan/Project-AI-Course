@@ -6,6 +6,21 @@ export async function POST(request: Request) {
   try {
     const { subject, userMessage, userProfile, currentContent } = await request.json()
 
+    // --- Start Validation ---
+    if (!subject || !userMessage || !currentContent) {
+      console.error("Regenerate Error: Missing required fields in request body.", { subject, userMessage, currentContent });
+      return NextResponse.json({ error: "Missing required fields: subject, userMessage, or currentContent." }, { status: 400 });
+    }
+
+    if (typeof currentContent !== 'object' || currentContent === null ||
+        typeof currentContent.title !== 'string' ||
+        typeof currentContent.content !== 'string' ||
+        typeof currentContent.order !== 'number') {
+      console.error("Regenerate Error: Invalid 'currentContent' structure.", { currentContent });
+      return NextResponse.json({ error: "Invalid 'currentContent' structure provided." }, { status: 400 });
+    }
+    // --- End Validation ---
+
     // Extract learning preferences
     const preferences: LearningPreferences = userProfile?.learningPreferences || {
       difficulty: "intermediate",
@@ -82,16 +97,21 @@ Please maintain the same topic and learning objectives, but adapt the content ac
 
     // Create course content object
     const courseContent: CourseContent = {
-      id: `${subject}-${currentContent.title}-${Date.now()}`,
+      id: `${subject}-${currentContent.title.replace(/\s+/g, '-')}-${Date.now()}`, // Sanitize title for ID
       title: currentContent.title,
       content,
       order: currentContent.order,
     }
 
     return NextResponse.json({ courseContent })
-  } catch (error) {
-    console.error("Error regenerating content:", error)
-    return NextResponse.json({ error: "Failed to regenerate course content" }, { status: 500 })
+  } catch (error: any) { // Catch specific error type if possible
+    console.error("Error regenerating content:", error); // Log the full error
+    // Check for specific error types if needed
+    // if (error.message.includes("some specific Gemini error")) { ... }
+    return NextResponse.json(
+      { error: `Failed to regenerate course content. ${error.message || ""}`.trim() }, // Include error message if available
+      { status: 500 }
+    );
   }
 }
 
