@@ -68,9 +68,14 @@ export interface LearningPreferences {
   customPreferences?: string
 }
 
-// User profile with learning preferences
+// User profile with learning preferences and basic info
 export interface UserProfile {
   id: string
+  firstName?: string | null // Added
+  lastName?: string | null // Added
+  fullName?: string | null // Added
+  imageUrl?: string | null // Added
+  email?: string | null // Added
   learningPreferences: LearningPreferences
 }
 
@@ -201,11 +206,41 @@ export const useAssessmentStore = create<AssessmentState>()(
       setUserProfile: (profile) => set({ userProfile: profile }),
       updateUserProfile: (updates) =>
         set((state) => ({
-          userProfile: state.userProfile ? { ...state.userProfile, ...updates } : null,
+          userProfile: state.userProfile
+            ? { ...state.userProfile, ...updates }
+            : // Initialize with defaults if null
+              {
+                id: updates.id || "guest-user-id", // Ensure ID is present
+                learningPreferences: {
+                  difficulty: "intermediate",
+                  pacing: "standard",
+                  explanationDetail: "balanced",
+                  examplePreference: "moderate",
+                  focusAreas: [],
+                  customPreferences: "",
+                },
+                ...updates,
+              },
         })),
       updateLearningPreferences: (preferences) =>
         set((state) => {
-          if (!state.userProfile) return { userProfile: null }
+          if (!state.userProfile) {
+            // Initialize profile if it doesn't exist when updating preferences
+            return {
+              userProfile: {
+                id: "guest-user-id", // Default guest ID
+                learningPreferences: {
+                  difficulty: "intermediate",
+                  pacing: "standard",
+                  explanationDetail: "balanced",
+                  examplePreference: "moderate",
+                  focusAreas: [],
+                  customPreferences: "",
+                  ...preferences, // Apply incoming preferences
+                },
+              },
+            }
+          }
 
           return {
             userProfile: {

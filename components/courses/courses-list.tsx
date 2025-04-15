@@ -1,12 +1,12 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, Code, Globe } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAssessmentStore } from "@/lib/store"
-import { useAuth } from "@clerk/nextjs"
 import { useToast } from "@/components/ui/use-toast"
 
 // Keep only Python and Web Development courses
@@ -39,20 +39,10 @@ const courses = [
 
 export function CoursesList() {
   const router = useRouter()
-  const { isSignedIn } = useAuth()
   const { toast } = useToast()
   const { setCurrentSubject, enrollInCourse, enrolledCourses } = useAssessmentStore()
 
   const handleEnroll = (courseId: string) => {
-    if (!isSignedIn) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to enroll in courses",
-        variant: "destructive",
-      })
-      return
-    }
-
     enrollInCourse(courseId)
     setCurrentSubject(courseId)
 

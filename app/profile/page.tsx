@@ -1,45 +1,43 @@
 import { MainLayout } from "@/components/main-layout"
 import { ProfileContent } from "@/components/profile/profile-content"
-import { currentUser } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
+// Removed currentUser import
+// Removed redirect import
 
 export default async function ProfilePage() {
   try {
-    // Using currentUser without options to handle both older and newer Clerk versions
-    const user = await currentUser()
+    // Removed Clerk's currentUser logic and redirect
+    // const user = await currentUser()
+    // if (!user) {
+    //   redirect("/sign-in")
+    // }
 
-    if (!user) {
-      redirect("/sign-in")
-    }
-
-    // Create a serializable user object
+    // Create a placeholder/dummy user object since Clerk is removed
     const serializableUser = {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      fullName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName || "User",
-      imageUrl: user.imageUrl,
-      email: user.emailAddresses[0]?.emailAddress || "",
+      id: "dummy-user-id", // Placeholder
+      firstName: "Guest", // Placeholder
+      lastName: "User", // Placeholder
+      fullName: "Guest User", // Placeholder
+      imageUrl: "/placeholder-user.jpg", // Placeholder image
+      email: "guest@example.com", // Placeholder
     }
 
     return (
       <MainLayout>
         <div className="w-full">
+          {/* Pass the dummy user object */}
           <ProfileContent user={serializableUser} />
         </div>
       </MainLayout>
     )
   } catch (error) {
     console.error("Error in profile page:", error)
-    // Provide a fallback UI in case of error
+    // Updated error handling for non-auth scenario
     return (
       <MainLayout>
         <div className="w-full py-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Authentication Error</h2>
-          <p className="mb-4">There was an error loading your profile. Please try signing in again.</p>
-          <a href="/sign-in" className="text-primary hover:underline">
-            Sign In
-          </a>
+          <h2 className="text-2xl font-bold mb-4">Error Loading Profile</h2>
+          <p className="mb-4">There was an error loading the profile information.</p>
+          {/* Removed Sign In link as auth is removed */}
         </div>
       </MainLayout>
     )

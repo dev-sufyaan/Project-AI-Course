@@ -1,16 +1,14 @@
-// Re-implementing Clerk authentication
-import { authMiddleware } from "@clerk/nextjs"
+import { NextRequest, NextResponse } from 'next/server'
 
-// This function uses Clerk auth middleware with proper configuration
-export default authMiddleware({
-  // Routes that can be accessed while signed out
-  publicRoutes: ["/", "/sign-in", "/sign-up", "/api/(.*)", "/about", "/documentation", "/team", "/_not-found"],
+// Clerk middleware removed. You may want to delete this file or add new middleware logic if needed.
 
-  // Routes that can always be accessed, and have no authentication information
-  ignoredRoutes: ["/api/gemini/(.*)", "/_next/(.*)", "/favicon.ico", "/ai-assistant.png"],
-})
+// Minimal middleware function to satisfy Next.js requirement
+export default function middleware(req: NextRequest) {
+  // You can add middleware logic here if needed in the future.
+  // For now, it just proceeds to the next handler.
+  return NextResponse.next()
+}
 
-// Update the matcher configuration to properly exclude problematic routes
 export const config = {
   matcher: [
     // Skip all internal paths (_next)
@@ -18,5 +16,5 @@ export const config = {
     // Include root path
     "/",
   ],
-}
+};
 
