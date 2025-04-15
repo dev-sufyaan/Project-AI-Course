@@ -1,5 +1,18 @@
-import { create } from "zustand"
-import { persist } from "zustand/middleware"
+import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import type { StateCreator } from 'zustand'
+import type { User } from '@supabase/supabase-js'
+import { toast } from 'sonner'
+
+// --- Type Definitions --- (Moved Course here)
+
+export interface Course {
+  subject: string;
+  title: string;
+  description?: string;
+  content: CourseContent[];
+  assessment?: Assessment; // Optional assessment linked to the course
+}
 
 export type QuestionType = "mcq" | "theory" | "coding"
 
@@ -79,13 +92,18 @@ export interface UserProfile {
   learningPreferences: LearningPreferences
 }
 
+// Define the structure for progress within a single subject
+export interface SubjectProgress {
+  currentTopic: number;
+  completedTopics: string[]; // Use topic IDs or titles
+  testScores?: Record<string, number>;
+  needsReinforcement?: string[];
+  passedAssessments?: string[];
+}
+
+// Use an index signature for subjects
 export interface CourseProgress {
-  subject: string
-  currentTopic: number
-  completedTopics: string[]
-  testScores: Record<string, number>
-  needsReinforcement: string[]
-  passedAssessments: string[] // Track which assessments the user has passed
+  [subject: string]: SubjectProgress | undefined;
 }
 
 // Course topic for the index
@@ -97,15 +115,18 @@ export interface CourseTopic {
   order: number
 }
 
+// --- Combined State Interface --- (Using AssessmentState as the main state)
+
 interface AssessmentState {
   // User profile
   userProfile: UserProfile | null
 
   // Course and learning
   currentSubject: string | null
-  courseContents: CourseContent[]
+  currentCourse: Course | null // Added currentCourse based on usage
+  courseContents: CourseContent[] // Content for the current subject/course
   currentContentIndex: number
-  courseProgress: CourseProgress | null
+  courseProgress: CourseProgress // Changed from CourseProgress | null
   enrolledCourses: string[]
 
   // Course index
@@ -127,6 +148,8 @@ interface AssessmentState {
   // Content generation status
   isGeneratingContent: boolean
 
+  // --- Actions --- (Defined directly in the store)
+
   // Actions - User Profile
   setUserProfile: (profile: UserProfile) => void
   updateUserProfile: (updates: Partial<UserProfile>) => void
@@ -134,17 +157,16 @@ interface AssessmentState {
 
   // Actions - Course
   setCurrentSubject: (subject: string | null) => void
+  setCurrentCourse: (course: Course | null) => void // Added action
   setCourseContents: (contents: CourseContent[]) => void
-  setCurrentContentIndex: (index: number) => void
-  updateCourseProgress: (progress: Partial<CourseProgress>) => void
+  setCurrentContentIndex: (index: number, subject: string) => void // Auto-saves progress
   enrollInCourse: (courseId: string) => void
-  markTopicCompleted: (topicTitle: string) => void
-  saveTestScore: (testId: string, score: number) => void
-  markAssessmentPassed: (assessmentId: string) => void
+  markTopicCompleted: (subject: string, topicId: string) => void // Updated signature
+  saveTestScore: (subject: string, testId: string, score: number) => void // Updated signature
+  markAssessmentPassed: (subject: string, assessmentId: string) => void // Updated signature
   resetCourseContents: () => void
   unenrollFromCourse: (courseId: string) => void
-  saveCourseProgress: () => void
-  loadSavedProgress: (subject: string) => boolean
+  loadSavedProgress: (subject: string) => boolean // Loads progress for a subject
 
   // Actions - Course Index
   setShowCourseIndex: (show: boolean) => void
@@ -160,7 +182,7 @@ interface AssessmentState {
   setShowExplanationPanel: (show: boolean) => void
   setCurrentExplanation: (explanation: string | null) => void
   resetAssessment: () => void
-  hasPassedCurrentAssessment: () => boolean
+  hasPassedCurrentAssessment: (subject: string) => boolean // Updated signature
 
   // Actions - Chat
   addChatMessage: (role: "user" | "assistant", content: string) => void
@@ -170,24 +192,21 @@ interface AssessmentState {
   setIsGeneratingContent: (isGenerating: boolean) => void
 }
 
-export const useAssessmentStore = create<AssessmentState>()(
+// --- Store Implementation --- (Using single state object)
+
+export const useBoundStore = create<AssessmentState>()(
   persist(
     (set, get) => ({
-      // User profile
+      // --- Initial State --- 
       userProfile: null,
-
-      // Course and learning
       currentSubject: null,
+      currentCourse: null,
       courseContents: [],
       currentContentIndex: 0,
-      courseProgress: null,
+      courseProgress: {}, // Initialize as empty object
       enrolledCourses: [],
-
-      // Course index
       showCourseIndex: false,
       courseTopics: [],
-
-      // Assessment
       assessment: null,
       currentQuestionIndex: 0,
       userAnswers: {},
@@ -195,293 +214,182 @@ export const useAssessmentStore = create<AssessmentState>()(
       isLoading: false,
       showExplanationPanel: false,
       currentExplanation: null,
-
-      // Chat
       chatMessages: [],
-
-      // Content generation status
       isGeneratingContent: false,
 
-      // Actions - User Profile
+      // --- Actions Implementation --- 
+
+      // User Profile Actions
       setUserProfile: (profile) => set({ userProfile: profile }),
-      updateUserProfile: (updates) =>
-        set((state) => ({
-          userProfile: state.userProfile
-            ? { ...state.userProfile, ...updates }
-            : // Initialize with defaults if null
-              {
-                id: updates.id || "guest-user-id", // Ensure ID is present
-                learningPreferences: {
-                  difficulty: "intermediate",
-                  pacing: "standard",
-                  explanationDetail: "balanced",
-                  examplePreference: "moderate",
-                  focusAreas: [],
-                  customPreferences: "",
-                },
-                ...updates,
-              },
-        })),
-      updateLearningPreferences: (preferences) =>
-        set((state) => {
-          if (!state.userProfile) {
-            // Initialize profile if it doesn't exist when updating preferences
-            return {
-              userProfile: {
-                id: "guest-user-id", // Default guest ID
-                learningPreferences: {
-                  difficulty: "intermediate",
-                  pacing: "standard",
-                  explanationDetail: "balanced",
-                  examplePreference: "moderate",
-                  focusAreas: [],
-                  customPreferences: "",
-                  ...preferences, // Apply incoming preferences
-                },
-              },
-            }
-          }
+      updateUserProfile: (updates) => set((state) => ({ userProfile: { ...state.userProfile!, ...updates } })),
+      updateLearningPreferences: (preferences) => set((state) => ({
+        userProfile: state.userProfile
+          ? { ...state.userProfile, learningPreferences: { ...state.userProfile.learningPreferences, ...preferences } }
+          : null,
+      })),
 
-          return {
-            userProfile: {
-              ...state.userProfile,
-              learningPreferences: {
-                ...state.userProfile.learningPreferences,
-                ...preferences,
-              },
-            },
-          }
-        }),
-
-      // Actions - Course
-      setCurrentSubject: (subject) => set({ currentSubject: subject }),
+      // Course Actions
+      setCurrentSubject: (subject) => set({ currentSubject: subject, currentContentIndex: 0, courseContents: [], currentCourse: null }), // Reset index/content on subject change
+      setCurrentCourse: (course) => set({ currentCourse: course, courseContents: course?.content || [] }),
       setCourseContents: (contents) => set({ courseContents: contents }),
-      setCurrentContentIndex: (index) => set({ currentContentIndex: index }),
-      updateCourseProgress: (progress) =>
-        set((state) => ({
-          courseProgress: state.courseProgress
-            ? { ...state.courseProgress, ...progress }
-            : {
-                subject: state.currentSubject || "",
-                currentTopic: 0,
-                completedTopics: [],
-                testScores: {},
-                needsReinforcement: [],
-                passedAssessments: [],
-                ...progress,
-              },
-        })),
-      saveCourseProgress: () => 
-        set((state) => {
-          if (!state.currentSubject || state.courseContents.length === 0) return state;
-          
-          // Create a new progress object if one doesn't exist
-          const existingProgress = state.courseProgress || {
-            subject: state.currentSubject,
-            completedTopics: [],
-            testScores: {},
-            needsReinforcement: [],
-            passedAssessments: [],
-            currentTopic: 0
-          };
-          
-          // Ensure we're updating the correct subject's progress
-          if (existingProgress.subject !== state.currentSubject) {
-            // If subject has changed, create a new progress object
-            return {
-              courseProgress: {
-                subject: state.currentSubject,
-                currentTopic: state.currentContentIndex,
-                completedTopics: [],
-                testScores: {},
-                needsReinforcement: [],
-                passedAssessments: []
-              }
-            };
-          }
-          
-          // Calculate completed topics from courseTopics if available
-          const completedTopicTitles = state.courseTopics
-            .filter(topic => topic.completed)
-            .map(topic => topic.title);
-          
-          // Merge existing completed topics with ones from courseTopics
-          const mergedCompletedTopics = Array.from(
-            new Set([
-              ...(existingProgress.completedTopics || []),
-              ...completedTopicTitles
-            ])
-          );
-          
-          // Update the existing progress
-          return {
-            courseProgress: {
-              ...existingProgress,
-              currentTopic: state.currentContentIndex,
-              completedTopics: mergedCompletedTopics
-            }
-          };
-        }),
-      loadSavedProgress: (subject) => {
-        const state = get();
-        
-        // If no subject provided or no course contents, can't load progress
-        if (!subject || state.courseContents.length === 0) {
-          return false;
+
+      setCurrentContentIndex: (index, subject) => {
+        const courseContent = get().courseContents; // Use courseContents directly
+        if (!courseContent || index < 0 || index >= courseContent.length) {
+          console.warn(`setCurrentContentIndex: Invalid index ${index} for subject ${subject}`);
+          return;
         }
-        
-        // Check if we have saved progress for this specific subject
-        if (state.courseProgress?.subject === subject && 
-            typeof state.courseProgress.currentTopic === 'number') {
-          
-          const savedIndex = state.courseProgress.currentTopic;
-          
-          // Ensure the saved index is valid (not beyond the course content length)
-          const validIndex = Math.min(savedIndex, state.courseContents.length - 1);
-          
-          // Only update if the index is different from current to avoid unnecessary rerenders
-          if (validIndex !== state.currentContentIndex) {
-            set({ currentContentIndex: validIndex });
+        if (!subject) {
+           console.warn(`setCurrentContentIndex: Subject is missing.`);
+           return;
+        }
+
+        set((state: AssessmentState) => {
+          const progress = state.courseProgress || {};
+          const currentSubjectProgress = progress[subject] || { currentTopic: 0, completedTopics: [] };
+          const updatedSubjectProgress: SubjectProgress = {
+            ...currentSubjectProgress,
+            currentTopic: index,
+          };
+          console.log(`Auto-saving progress for ${subject}: Topic index ${index}`);
+          return {
+            currentContentIndex: index,
+            courseProgress: {
+              ...progress,
+              [subject]: updatedSubjectProgress,
+            },
+          };
+        });
+      },
+
+      loadSavedProgress: (subject) => {
+        if (!subject) return false;
+        const savedProgress = get().courseProgress?.[subject];
+        if (savedProgress && typeof savedProgress.currentTopic === 'number') {
+          const courseContent = get().courseContents; // Use courseContents
+          if (courseContent && savedProgress.currentTopic >= 0 && savedProgress.currentTopic < courseContent.length) {
+            console.log(`Loading saved progress for ${subject}: Topic index ${savedProgress.currentTopic}`);
+            // Directly set index, auto-save will trigger via the set call inside this function
+            get().setCurrentContentIndex(savedProgress.currentTopic, subject);
+            // toast("Progress Restored", { description: `Resumed ${subject} at your last topic.` }); // Optional toast
             return true;
+          } else {
+            console.warn(`Saved progress index ${savedProgress.currentTopic} invalid for ${subject}. Resetting.`);
+            get().setCurrentContentIndex(0, subject); // Reset to start if invalid
+          }
+        } else {
+          console.log(`No valid saved progress found for ${subject}. Starting from beginning.`);
+          if (get().currentContentIndex !== 0) {
+             get().setCurrentContentIndex(0, subject); // Ensure start from 0 if no progress
           }
         }
         return false;
       },
-      enrollInCourse: (courseId) =>
-        set((state) => ({
-          enrolledCourses: state.enrolledCourses.includes(courseId)
-            ? state.enrolledCourses
-            : [...state.enrolledCourses, courseId],
-          courseProgress:
-            state.courseProgress?.subject === courseId
-              ? state.courseProgress
-              : {
-                  subject: courseId,
-                  currentTopic: 0,
-                  completedTopics: [],
-                  testScores: {},
-                  needsReinforcement: [],
-                  passedAssessments: [],
-                },
-        })),
-      markTopicCompleted: (topicTitle) =>
-        set((state) => {
-          if (!state.courseProgress || !state.currentSubject) return state
 
-          const completedTopics = state.courseProgress.completedTopics || []
-          if (!completedTopics.includes(topicTitle)) {
-            return {
-              courseProgress: {
-                ...state.courseProgress,
-                completedTopics: [...completedTopics, topicTitle],
-              },
-            }
-          }
-          return state
-        }),
-      saveTestScore: (testId, score) =>
-        set((state) => {
-          if (!state.courseProgress) return state
+      enrollInCourse: (courseId) => set((state) => ({
+        enrolledCourses: state.enrolledCourses.includes(courseId)
+          ? state.enrolledCourses
+          : [...state.enrolledCourses, courseId],
+      })),
+      unenrollFromCourse: (courseId) => set((state) => ({
+        enrolledCourses: state.enrolledCourses.filter((id) => id !== courseId),
+      })),
 
+      markTopicCompleted: (subject, topicId) => {
+        if (!subject) return;
+        set((state: AssessmentState) => {
+          const progress = state.courseProgress || {};
+          const subjectProgress = progress[subject] || { currentTopic: state.currentContentIndex, completedTopics: [] };
+          if (subjectProgress.completedTopics.includes(topicId)) return {}; // No change
+          const updatedSubjectProgress: SubjectProgress = {
+            ...subjectProgress,
+            completedTopics: [...subjectProgress.completedTopics, topicId],
+          };
           return {
-            courseProgress: {
-              ...state.courseProgress,
-              testScores: {
-                ...(state.courseProgress.testScores || {}),
-                [testId]: score,
-              },
-            },
-          }
-        }),
-      markAssessmentPassed: (assessmentId) =>
-        set((state) => {
-          if (!state.courseProgress) return state
-
-          const passedAssessments = state.courseProgress.passedAssessments || []
-          if (!passedAssessments.includes(assessmentId)) {
-            return {
-              courseProgress: {
-                ...state.courseProgress,
-                passedAssessments: [...passedAssessments, assessmentId],
-              },
-            }
-          }
-          return state
-        }),
-      resetCourseContents: () =>
-        set({
-          courseContents: [],
-          currentContentIndex: 0,
-          assessment: null,
-          currentQuestionIndex: 0,
-          userAnswers: {},
-          showExplanationPanel: false,
-          currentExplanation: null,
-        }),
-      unenrollFromCourse: (courseId) =>
-        set((state) => ({
-          enrolledCourses: state.enrolledCourses.filter((id) => id !== courseId),
-          courseProgress: state.courseProgress?.subject === courseId ? null : state.courseProgress,
-        })),
-
-      // Actions - Course Index
-      setShowCourseIndex: (show) => set({ showCourseIndex: show }),
-      setCourseTopics: (topics) => set({ courseTopics: topics }),
-      updateCourseTopic: (topicId, updates) =>
-        set((state) => ({
-          courseTopics: state.courseTopics.map((topic) => (topic.id === topicId ? { ...topic, ...updates } : topic)),
-        })),
-
-      // Actions - Assessment
-      setAssessment: (assessment) => set({ assessment }),
-      setCurrentQuestionIndex: (index) => set({ currentQuestionIndex: index }),
-      setUserAnswer: (questionId, answer) =>
-        set((state) => ({
-          userAnswers: {
-            ...state.userAnswers,
-            [questionId]: answer,
-          },
-        })),
-      togglePanel: () => set((state) => ({ isPanelOpen: !state.isPanelOpen })),
-      setIsLoading: (isLoading) => set({ isLoading }),
-      setShowExplanationPanel: (show) => set({ showExplanationPanel: show }),
-      setCurrentExplanation: (explanation) => set({ currentExplanation: explanation }),
-      resetAssessment: () =>
-        set({
-          assessment: null,
-          currentQuestionIndex: 0,
-          userAnswers: {},
-          showExplanationPanel: false,
-          currentExplanation: null,
-        }),
-      hasPassedCurrentAssessment: () => {
-        const state = get()
-        if (!state.assessment) return false
-
-        const assessmentId = state.assessment.id
-        const passedAssessments = state.courseProgress?.passedAssessments || []
-
-        return passedAssessments.includes(assessmentId)
+            courseProgress: { ...progress, [subject]: updatedSubjectProgress },
+          };
+        });
       },
 
-      // Actions - Chat
-      addChatMessage: (role, content) =>
-        set((state) => ({
-          chatMessages: [...state.chatMessages, { role, content }],
-        })),
+      saveTestScore: (subject, testId, score) => {
+         if (!subject) return;
+         set((state: AssessmentState) => {
+           const progress = state.courseProgress || {};
+           const subjectProgress = progress[subject] || { currentTopic: state.currentContentIndex, completedTopics: [] };
+           const updatedSubjectProgress: SubjectProgress = {
+             ...subjectProgress,
+             testScores: { ...(subjectProgress.testScores || {}), [testId]: score },
+           };
+           return {
+             courseProgress: { ...progress, [subject]: updatedSubjectProgress },
+           };
+         });
+      },
+
+      markAssessmentPassed: (subject, assessmentId) => {
+         if (!subject) return;
+         set((state: AssessmentState) => {
+           const progress = state.courseProgress || {};
+           const subjectProgress = progress[subject] || { currentTopic: state.currentContentIndex, completedTopics: [] };
+           if (subjectProgress.passedAssessments?.includes(assessmentId)) return {}; // No change
+           const updatedSubjectProgress: SubjectProgress = {
+             ...subjectProgress,
+             passedAssessments: [...(subjectProgress.passedAssessments || []), assessmentId],
+           };
+           return {
+             courseProgress: { ...progress, [subject]: updatedSubjectProgress },
+           };
+         });
+      },
+
+      resetCourseContents: () => set({ courseContents: [], currentContentIndex: 0, currentCourse: null }),
+
+      // Course Index Actions
+      setShowCourseIndex: (show) => set({ showCourseIndex: show }),
+      setCourseTopics: (topics) => set({ courseTopics: topics }),
+      updateCourseTopic: (topicId, updates) => set((state) => ({
+        courseTopics: state.courseTopics.map((topic) =>
+          topic.id === topicId ? { ...topic, ...updates } : topic
+        ),
+      })),
+
+      // Assessment Actions
+      setAssessment: (assessment) => set({ assessment: assessment, currentQuestionIndex: 0, userAnswers: {} }), // Reset index/answers
+      setCurrentQuestionIndex: (index) => set({ currentQuestionIndex: index }),
+      setUserAnswer: (questionId, answer) => set((state) => ({
+        userAnswers: { ...state.userAnswers, [questionId]: answer },
+      })),
+      togglePanel: () => set((state) => ({ isPanelOpen: !state.isPanelOpen })),
+      setIsLoading: (isLoading) => set({ isLoading: isLoading }),
+      setShowExplanationPanel: (show) => set({ showExplanationPanel: show }),
+      setCurrentExplanation: (explanation) => set({ currentExplanation: explanation }),
+      resetAssessment: () => set({ assessment: null, currentQuestionIndex: 0, userAnswers: {}, isPanelOpen: false, showExplanationPanel: false, currentExplanation: null }),
+      hasPassedCurrentAssessment: (subject) => {
+        if (!subject || !get().assessment) return false;
+        const assessmentId = get().assessment!.id;
+        return get().courseProgress?.[subject]?.passedAssessments?.includes(assessmentId) || false;
+      },
+
+      // Chat Actions
+      addChatMessage: (role, content) => set((state) => ({ chatMessages: [...state.chatMessages, { role, content }] })),
       resetChat: () => set({ chatMessages: [] }),
 
-      // Actions - Content Generation
+      // Content Generation Actions
       setIsGeneratingContent: (isGenerating) => set({ isGeneratingContent: isGenerating }),
+
     }),
     {
       name: "learning-platform-storage",
-      partialize: (state) => ({
+      partialize: (state: AssessmentState) => ({
         userProfile: state.userProfile,
-        courseProgress: state.courseProgress,
+        courseProgress: state.courseProgress, // Persist the progress structure
         enrolledCourses: state.enrolledCourses,
+        // Do NOT persist volatile state like current index, current course, chat messages etc.
       }),
-    },
-  ),
+    }
+  )
 )
+
+// Define the combined StoreState type (using AssessmentState)
+export type StoreState = AssessmentState;
 

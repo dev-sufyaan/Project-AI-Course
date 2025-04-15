@@ -71,7 +71,8 @@ export async function POST(request: Request) {
       // Check if the response contains markdown code blocks and extract the JSON
       let jsonString = response.trim()
 
-      // Remove any markdown code block syntax
+      // More comprehensive regex to handle code blocks with or without language specification
+      // This will match code blocks like ```json, ``` or just the content if it looks like JSON
       const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/g
       const match = codeBlockRegex.exec(jsonString)
 
@@ -81,9 +82,18 @@ export async function POST(request: Request) {
         // If no code block found, try to clean up the string
         // Remove any leading/trailing backticks or json tags
         jsonString = jsonString
-          .replace(/^```json\s*/, "")
-          .replace(/\s*```$/, "")
+          .replace(/^```(?:json)?\s*/m, "")
+          .replace(/\s*```$/m, "")
           .trim()
+          
+        // If the string starts with a { and ends with a }, it's likely JSON already
+        if (!jsonString.startsWith('{') || !jsonString.endsWith('}')) {
+          // Try to extract just the JSON part
+          const jsonObjectMatch = jsonString.match(/(\{[\s\S]*\})/);
+          if (jsonObjectMatch && jsonObjectMatch[1]) {
+            jsonString = jsonObjectMatch[1].trim();
+          }
+        }
       }
 
       try {
