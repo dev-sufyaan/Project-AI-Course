@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { useBoundStore } from "@/lib/store"
+import { useAssessmentStore } from "@/lib/store"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -37,7 +37,7 @@ export function AssessmentPanel() {
     markTopicCompleted,
     updateCourseProgress,
     courseProgress,
-  } = useBoundStore()
+  } = useAssessmentStore()
 
   const prevContentIndex = useRef(currentContentIndex)
   const { toast } = useToast()

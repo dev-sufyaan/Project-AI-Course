@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useBoundStore } from "@/lib/store"
+import { useAssessmentStore } from "@/lib/store"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Code, Globe, BookOpen } from "lucide-react"
@@ -27,7 +27,7 @@ const subjects = [
 
 export function SubjectSelection() {
   const router = useRouter()
-  const { setCurrentSubject, userProfile, enrollInCourse, enrolledCourses } = useBoundStore()
+  const { setCurrentSubject, userProfile, enrollInCourse, enrolledCourses } = useAssessmentStore()
 
   const handleSelectSubject = (subjectId: string) => {
     setCurrentSubject(subjectId)
