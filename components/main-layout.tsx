@@ -20,9 +20,9 @@ export function MainLayout({ children }: MainLayoutProps) {
           <div>
             <Link href="/" className="hover:opacity-90 transition-opacity">
               <h1 className="text-4xl md:text-5xl font-heading font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
-                Learning Platform
+                Right Site Learning Platform
               </h1>
-              <p className="text-muted-foreground mt-2">Personalized learning and assessment powered by AI</p>
+              <p className="text-muted-foreground mt-2">AI powered learning with personalization</p>
             </Link>
           </div>
           <div className="flex items-center gap-4">
@@ -51,12 +51,6 @@ export function MainLayout({ children }: MainLayoutProps) {
                   About
                 </Button>
               </Link>
-              <Link href="/team">
-                <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Team
-                </Button>
-              </Link>
             </nav>
             <AuthButtons />
           </div>
@@ -66,7 +60,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0">
               <p className="text-muted-foreground text-sm">
-                © {new Date().getFullYear()} Learning Platform. All rights reserved.
+                © {new Date().getFullYear()} Right Site Learning Platform. All rights reserved. Created by Ken.
               </p>
             </div>
             <div className="flex space-x-6">
@@ -75,9 +69,6 @@ export function MainLayout({ children }: MainLayoutProps) {
               </Link>
               <Link href="/about" className="text-muted-foreground hover:text-foreground text-sm">
                 About
-              </Link>
-              <Link href="/team" className="text-muted-foreground hover:text-foreground text-sm">
-                Team
               </Link>
             </div>
           </div>

@@ -6,10 +6,10 @@ export default function AboutPage() {
   return (
     <MainLayout>
       <div className="max-w-4xl mx-auto py-10">
-        <h1 className="text-3xl font-bold mb-6">About the Learning Platform</h1>
+        <h1 className="text-3xl font-bold mb-6">About Right Site Learning Platform</h1>
         <div className="prose prose-lg dark:prose-invert">
           <p>
-            Welcome to our AI-powered learning platform designed to provide personalized education
+            Welcome to our AI-powered Right Site Learning Platform designed to provide personalized education
             experiences for students of all levels. Our platform uses advanced AI technology to adapt
             content to your learning style and pace.
           </p>
@@ -29,7 +29,7 @@ export default function AboutPage() {
           <h2>Contact Us</h2>
           <p>
             Have questions or feedback? We'd love to hear from you! Contact our support team at
-            support@learningplatform.com.
+            dev.sufyaan@gmail.com.
           </p>
         </div>
       </div>

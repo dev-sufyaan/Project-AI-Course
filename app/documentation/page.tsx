@@ -10,7 +10,7 @@ export default function DocumentationPage() {
         <div className="prose prose-lg dark:prose-invert max-w-none">
           <h2>Getting Started</h2>
           <p>
-            Welcome to our AI-powered Learning Platform! This comprehensive documentation will help you understand how to use the
+            Welcome to our AI-powered Right Site Learning Platform! This comprehensive documentation will help you understand how to use the
             platform effectively and get the most out of your learning experience.
           </p>
 
@@ -239,7 +239,7 @@ export default function DocumentationPage() {
             <Link href="/about" className="text-primary hover:underline">
               About page
             </Link>{" "}
-            or contact our support team at support@learningplatform.com.
+            or contact our support team at dev.sufyaan@gmail.com.
           </p>
         </div>
       </div>

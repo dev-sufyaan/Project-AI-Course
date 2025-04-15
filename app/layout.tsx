@@ -24,9 +24,9 @@ const firaCode = Fira_Code({
 })
 
 export const metadata: Metadata = {
-  title: "Learning Platform",
-  description: "A personalized learning and assessment platform",
-    generator: 'v0.dev'
+  title: "Right Site",
+  description: "AI powered learning with personalization",
+  generator: 'dev-sufyaan'
 }
 
 export default function RootLayout({
